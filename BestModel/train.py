@@ -21,12 +21,13 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 MODEL_NAME = "microsoft/deberta-v3-base"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
-LEARNING_RATE = 3e-5
-HEAD_LEARNING_RATE = 1e-3
+LEARNING_RATE = 2e-5
+HEAD_LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
-EPOCHS = 10
-PATIENCE = 3
+EPOCHS = 15
+PATIENCE = 5
+POS_WEIGHT = 3.0  # moderate upweighting (not the full 5.27)
 SEED = 42
 
 # Paths (relative to project root)
@@ -184,7 +185,8 @@ def train():
     model.to(device)
 
     # ── Loss with class weights ──
-    class_weights = compute_class_weights(df_train["label"].values)
+    class_weights = torch.tensor([1.0, POS_WEIGHT], dtype=torch.float32)
+    print(f"  Class weights: neg={class_weights[0]:.2f}, pos={class_weights[1]:.2f}")
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights.to(device))
 
     # ── Optimiser with separate LR for head vs backbone ──
