@@ -179,6 +179,7 @@ def train():
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME, num_labels=2
     )
+    model.float()  # ensure full float32 precision
     model.to(device)
 
     # ── Loss with class weights ──
