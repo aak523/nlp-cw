@@ -211,7 +211,8 @@ def train():
 
             optimizer.zero_grad()
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            loss = criterion(outputs.logits, labels)
+            logits = outputs.logits.float()  # ensure float32 for loss
+            loss = criterion(logits, labels)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
