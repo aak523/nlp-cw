@@ -1,0 +1,226 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{float}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% ── Placeholder command ───────────────────────────────────
+\newcommand{\todo}[1]{{\color{red}\textbf{[TODO: #1]}}}
+
+% ── Title ─────────────────────────────────────────────────
+\title{%
+    \textbf{Natural Language Processing Coursework} \\[0.3em]
+    \large Detecting Patronising and Condescending Language (PCL)
+}
+\author{
+    Adam Kassam \\
+    CID: 02374184 \\ [1em]
+    Leaderboard Name: Freaky K \\[0.5em]
+    Repository: https://github.com/aak523/nlp-cw
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% ==============================================================
+\section{Critical Paper Review}
+\label{sec:ex1}
+% [6 Marks | up to 3 Hours]
+% ==============================================================
+
+\subsection*{Q1. Primary Contributions}
+
+The authors address the problem of detecting patronising and condescending language (PCL) towards vulnerable communities in news media. PCL is a subtle, often well-intentioned form of harmful language that had been largely overlooked by NLP research in favour of more explicit phenomena such as hate speech and offensive language.
+
+The authors' primary contribution is a new annotated dataset of over 10,000 paragraphs extracted from the News on Web (NoW) corpus, retrieved using ten keywords related to vulnerable groups (e.g.\ \textit{homeless}, \textit{refugee}, \textit{immigrant}) across 20 English-speaking countries.
+
+Alongside the dataset, they propose a two-level taxonomy of PCL categories: three high-level groups (\textit{The Saviour}, \textit{The Expert}, \textit{The Poet}) subdivided into seven fine-grained subcategories such as \textit{Unbalanced power relations}, \textit{Shallow solution}, and \textit{Metaphor}.
+
+The paper also provides exploratory baselines using SVMs, a BiLSTM, and fine-tuned language models (BERT variants and RoBERTa) across two tasks: binary PCL detection and multi-label PCL categorisation.
+
+\subsection*{Q2. Technical Strengths}
+
+\paragraph{Originality and significance.} The dataset fills a genuine gap in NLP research on subtle harmful language. While prior work such as Wang and Potts (2019) modelled condescension in direct communication, this paper targets PCL in news media directed at vulnerable communities, which is a distinct and understudied setting. The two-level taxonomy provides a principled framework for categorising PCL that goes beyond binary detection.
+
+\paragraph{Annotation methodology.} The annotation process is thorough: two primary annotators labelled the full dataset on a three-level scale, with a third annotator resolving total disagreements. Individual labels were combined into a five-point scale capturing degrees of agreement, and a second annotation pass used the BRAT tool to mark specific PCL spans with subcategory labels.
+
+\paragraph{Evaluation design.} The decomposition into binary detection (Task~1) and multi-label categorisation (Task~2) is well-motivated and provides a broad view of model capabilities. The choice of precision, recall, and F1 for the positive class is appropriate given the severe class imbalance (only 995 of 10,637 paragraphs are positive), where accuracy alone would be misleading. The error analysis is one of the paper's strongest elements: concrete misclassification examples are provided with specific explanations, revealing that false positives arise from superficially PCL-like language while false negatives involve categories requiring world knowledge.
+
+\paragraph{Accessibility.} The paper is clearly written. The sociolinguistics background and taxonomy definitions are accessible without prior NLP expertise.
+
+\subsection*{Q3. Key Weaknesses}
+
+\paragraph{Limited modelling contribution.} The authors apply well-known baselines (SVMs, BiLSTM, BERT variants) without proposing any novel architecture or training strategy tailored to PCL. They identify that certain categories (e.g.\ \textit{Metaphor}) require world knowledge, yet do not explore methods to inject such knowledge (e.g.\ knowledge graph embeddings or auxiliary training objectives). The choice to represent paragraphs using averaged Word2Vec embeddings for the SVM-WV baseline, which entirely discards word order, is also not discussed, despite this seeming particularly problematic for detecting subtle language patterns.
+
+\paragraph{Absence of ablation studies.} The paper includes no ablations. For example, it does not investigate whether the retrieval keyword affects model performance, whether the annotation threshold (labels $\geq 2$ as positive vs.\ other cutoffs) impacts results, or whether providing the keyword as an additional input feature helps. This makes it difficult to understand \textit{why} the models succeed or fail in specific cases.
+
+\paragraph{Reproducibility gaps.} While hyperparameters for SVMs and the BiLSTM are reported and the dataset is released, several details needed for exact reproduction are missing: learning rates for BERT fine-tuning are not stated, the specific cross-validation fold splits are neither provided nor described, and preprocessing steps (e.g.\ tokenisation procedures per model) are not detailed. Approximate reproduction should be feasible, but exact replication would require guesswork.
+
+% ==============================================================
+\section{Exploratory Data Analysis}
+\label{sec:ex2}
+% [6 Marks | up to 3 Hours]
+% Two distinct EDA techniques, 3 marks each.
+% ==============================================================
+
+\subsection{EDA Technique 1: \todo{Name of Technique}}
+
+\paragraph{Visual/Tabular Evidence.}
+
+\todo{Insert a figure or table here.}
+
+% Example figure placeholder:
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.7\textwidth]{figures/eda1.png}
+%     \caption{\todo{Caption describing the figure.}}
+%     \label{fig:eda1}
+% \end{figure}
+
+% Example table placeholder:
+% \begin{table}[H]
+%     \centering
+%     \caption{\todo{Caption describing the table.}}
+%     \label{tab:eda1}
+%     \begin{tabular}{lcc}
+%         \toprule
+%         \textbf{Metric} & \textbf{PCL} & \textbf{No PCL} \\
+%         \midrule
+%         \todo{Row 1} & \todo{} & \todo{} \\
+%         \todo{Row 2} & \todo{} & \todo{} \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+\paragraph{Analysis.}
+\todo{Briefly describe the findings from this technique.}
+
+\paragraph{Impact Statement.}
+\todo{Explain how this insight influences your approach to the PCL
+classification task (e.g.\ data preprocessing decisions, model architecture
+choices, handling class imbalance).}
+
+\subsection{EDA Technique 2: \todo{Name of Technique}}
+
+\paragraph{Visual/Tabular Evidence.}
+
+\todo{Insert a figure or table here.}
+
+\paragraph{Analysis.}
+\todo{Briefly describe the findings from this technique.}
+
+\paragraph{Impact Statement.}
+\todo{Explain how this insight influences your approach to the PCL
+classification task.}
+
+% ==============================================================
+\section{Proposed Approach}
+\label{sec:ex3}
+% [4 Marks | up to 2 Hours]
+% ==============================================================
+
+\todo{Clearly articulate your strategy to surpass the RoBERTa-base baseline
+(F1 = 0.48 on dev, 0.49 on test). Describe your model architecture, training
+methodology, data strategy, or any other key components. Include figures or
+flowcharts if helpful.}
+
+% Example flowchart placeholder:
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/approach.png}
+%     \caption{\todo{Overview of the proposed approach.}}
+%     \label{fig:approach}
+% \end{figure}
+
+\subsection*{Rationale and Expected Outcome}
+
+\todo{Justify why you expect this approach to outperform the baseline.
+Reference insights from your EDA (Section~\ref{sec:ex2}) and literature
+review (Section~\ref{sec:ex1}) where relevant. State your expected outcome.}
+
+% ==============================================================
+\section{Implementation and Global Evaluation}
+\label{sec:ex4-51}
+% Exercise 4: [1 Mark] -- repository link
+% Exercise 5.1: [6 Marks] -- dev.txt and test.txt
+% ==============================================================
+
+The code, trained model, and prediction files (\texttt{dev.txt},
+\texttt{test.txt}) are available in the \texttt{BestModel/} folder of the
+repository:
+
+\begin{center}
+    https://github.com/aak523/nlp-cw
+\end{center}
+
+% ==============================================================
+\section{Local Evaluation}
+\label{sec:ex52}
+% [5 Marks | up to 3 Hours]
+% Error Analysis (2.5 marks) + Other local evaluation (2.5 marks)
+% ==============================================================
+
+\subsection{Error Analysis}
+
+\todo{Manually inspect samples where the model failed on the official dev
+set. Categorise the types of errors. Are there patterns -- e.g.\ sarcasm,
+specific keywords, sentence length? Include concrete examples in a table.}
+
+% Example error analysis table:
+% \begin{table}[H]
+%     \centering
+%     \caption{Examples of misclassified instances on the dev set.}
+%     \label{tab:errors}
+%     \begin{tabular}{p{0.55\textwidth}ccc}
+%         \toprule
+%         \textbf{Text (truncated)} & \textbf{True} & \textbf{Pred} & \textbf{Error Type} \\
+%         \midrule
+%         \todo{Example 1...} & 1 & 0 & \todo{Type} \\
+%         \todo{Example 2...} & 0 & 1 & \todo{Type} \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+\todo{Discuss what these errors reveal about the model's behaviour and
+limitations.}
+
+\subsection{Additional Local Evaluation}
+
+\todo{Perform at least one additional local evaluation technique. Options
+include: ablation study, confusion matrix analysis, precision--recall curves,
+comparison with baseline predictions, per-category performance breakdown,
+or custom metrics. Include figures/tables and explain what they reveal.}
+
+% Example confusion matrix placeholder:
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.5\textwidth]{figures/confusion_matrix.png}
+%     \caption{\todo{Confusion matrix on the official dev set.}}
+%     \label{fig:cm}
+% \end{figure}
+
+% ==============================================================
+% Optional: References
+% ==============================================================
+% \bibliographystyle{plain}
+% \bibliography{references}
+
+\end{document}
