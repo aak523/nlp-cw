@@ -21,7 +21,8 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 MODEL_NAME = "microsoft/deberta-v3-base"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
-LEARNING_RATE = 2e-5
+LEARNING_RATE = 3e-5
+HEAD_LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
 EPOCHS = 10
@@ -186,10 +187,15 @@ def train():
     class_weights = compute_class_weights(df_train["label"].values)
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights.to(device))
 
-    # ── Optimiser & scheduler ──
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
-    )
+    # ── Optimiser with separate LR for head vs backbone ──
+    head_params = list(model.classifier.parameters()) + list(model.pooler.parameters())
+    head_param_ids = set(id(p) for p in head_params)
+    backbone_params = [p for p in model.parameters() if id(p) not in head_param_ids]
+
+    optimizer = torch.optim.AdamW([
+        {"params": backbone_params, "lr": LEARNING_RATE},
+        {"params": head_params, "lr": HEAD_LEARNING_RATE},
+    ], weight_decay=WEIGHT_DECAY)
     total_steps = len(train_loader) * EPOCHS
     warmup_steps = int(total_steps * WARMUP_RATIO)
     scheduler = get_linear_schedule_with_warmup(
