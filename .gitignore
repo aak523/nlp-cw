@@ -1,3 +1,6 @@
 # my notes
 *.txt
 *.md
+
+# paper review
+!PCL Paper Review.md
