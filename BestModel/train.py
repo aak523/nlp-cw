@@ -21,7 +21,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 MODEL_NAME = "microsoft/deberta-v3-base"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
-LEARNING_RATE = 5e-5
+LEARNING_RATE = 2e-5
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
 EPOCHS = 15
@@ -184,8 +184,7 @@ def train():
     model.to(device)
 
     # ── Loss with class weights ──
-    class_weights = torch.tensor([1.0, POS_WEIGHT], dtype=torch.float32)
-    print(f"  Class weights: neg={class_weights[0]:.2f}, pos={class_weights[1]:.2f}")
+    class_weights = compute_class_weights(df_train["label"].values)
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights.to(device))
 
     # ── Optimiser ──
