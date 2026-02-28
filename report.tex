@@ -27,7 +27,7 @@
 % ── Title ─────────────────────────────────────────────────
 \title{%
     \textbf{Natural Language Processing Coursework} \\[0.3em]
-    \large Detecting Patronising and Condescending Language (PCL)
+    \large COMP60035
 }
 \author{
     Adam Kassam \\
@@ -81,55 +81,91 @@ The paper also provides exploratory baselines using SVMs, a BiLSTM, and fine-tun
 % Two distinct EDA techniques, 3 marks each.
 % ==============================================================
 
-\subsection{EDA Technique 1: \todo{Name of Technique}}
+\subsection{Class Imbalance \& Sequence Length Profiling}
 
-\paragraph{Visual/Tabular Evidence.}
+\paragraph{Visual/Tabular Evidence.} See Figure~\ref{fig:eda1} and Table~\ref{tab:eda1-wordcount}.
 
-\todo{Insert a figure or table here.}
-
-% Example figure placeholder:
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.7\textwidth]{figures/eda1.png}
-%     \caption{\todo{Caption describing the figure.}}
-%     \label{fig:eda1}
-% \end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/eda1_class_and_length.png}
+    \caption{(a) Binary class distribution showing severe imbalance (90.5\% negative vs.\ 9.5\% positive). (b) Fine-grained annotator label distribution (0--4), with the majority of positive examples receiving label 2 (borderline agreement). (c) Word count box plots by label, showing that PCL-positive paragraphs tend to be longer (median 47 vs.\ 42 words).}
+    \label{fig:eda1}
+\end{figure}
 
 % Example table placeholder:
-% \begin{table}[H]
-%     \centering
-%     \caption{\todo{Caption describing the table.}}
-%     \label{tab:eda1}
-%     \begin{tabular}{lcc}
-%         \toprule
-%         \textbf{Metric} & \textbf{PCL} & \textbf{No PCL} \\
-%         \midrule
-%         \todo{Row 1} & \todo{} & \todo{} \\
-%         \todo{Row 2} & \todo{} & \todo{} \\
-%         \bottomrule
-%     \end{tabular}
-% \end{table}
+\begin{table}
+  \centering
+  \caption{Word count summary statistics by binary    
+label.}
+  \label{tab:eda1-wordcount}
+  \begin{tabular}{lrrrrrr}
+      \toprule
+      \textbf{Label} & \textbf{N} & \textbf{Mean} &   
+\textbf{Std} & \textbf{Min} & \textbf{Median} &
+\textbf{Max} \\
+      \midrule
+      Not PCL (0) & 9473 & 47.9 & 28.6 & 0 & 42 & 909 \\
+      PCL (1)     &  993 & 53.6 & 32.8 & 6 & 47 & 512 \\
+      \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \small Overall positive rate: 9.5\% (993/10{,}466). 
+Imbalance ratio (neg:pos): 9.5:1.
+\end{table}
 
 \paragraph{Analysis.}
-\todo{Briefly describe the findings from this technique.}
+
+The dataset exhibits \textbf{severe class imbalance}: only around 9.5\% of paragraphs are labelled as PCL (positive), yielding a negative-to-positive ratio of roughly 9.5:1. The fine-grained label distribution (panel b) reveals that the majority of positives come from label 2 (borderline agreement between annotators), with very few paragraphs receiving the strongest label of 4. This suggests a long tail of "soft" positives where annotators only partially agreed on the presence of PCL.
+
+Panel (c) shows that \textbf{PCL-positive paragraphs tend to be longer} than negative ones. The median word count for positive examples is notably higher, and the interquartile range is wider. This makes intuitive sense: patronising language often involves elaboration, storytelling, or emotive description, all of which produce longer text.
 
 \paragraph{Impact Statement.}
-\todo{Explain how this insight influences your approach to the PCL
-classification task (e.g.\ data preprocessing decisions, model architecture
-choices, handling class imbalance).}
 
-\subsection{EDA Technique 2: \todo{Name of Technique}}
+\begin{enumerate}
+    \item \textbf{Class-weighted training.} A naive classifier predicting "Not PCL" for every input would achieve \~90.5\% accuracy, so accuracy is a misleading metric. We will use \textbf{F1 for the positive class} as the primary metric (matching the shared task) and address the imbalance during training via class-weighted cross-entropy loss or focal loss.
+    \item \textbf{Tokeniser \texttt{max\_length}.} The word-count distribution informs our choice of maximum sequence length for the transformer tokeniser. Since PCL paragraphs skew longer and we do not want to truncate informative content, we should set \texttt{max\_length} generously (e.g. 256 subword tokens) and verify that truncation affects only a negligible fraction of positive examples.
+\end{enumerate}
+
+\subsection{Discriminative $N$-gram Analysis}
 
 \paragraph{Visual/Tabular Evidence.}
 
-\todo{Insert a figure or table here.}
+See Figure~\ref{fig:eda2}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/eda2_ngram_log_odds.png}
+    \caption{Log-odds ratio of bigram frequencies       
+between PCL-positive and PCL-negative classes. Left:
+bigrams most associated with patronising language.
+Right: bigrams most associated with non-patronising     
+language. Higher absolute values indicate stronger class
+association.}
+    \label{fig:eda2}
+\end{figure}
 
 \paragraph{Analysis.}
-\todo{Briefly describe the findings from this technique.}
+
+We compute the \textbf{log-odds ratio} of bigram frequencies between the PCL-positive and PCL-negative classes. This measures how much more (or less) likely each bigram is to appear in patronising text versus non-patronising text, after Laplace smoothing.
+
+The PCL-associated bigrams fall into clear \textbf{patronising archetypes} from the paper's taxonomy:
+\begin{itemize}
+    \item \textbf{Saviour framing:} \textit{"feed hungry"}, \textit{"families help"}, \textit{"need giving"}, \textit{"giving need"}, \textit{"reaching need"}, \textit{"restore hope"} --- language that positions the speaker as a rescuer.
+    \item \textbf{Compassion / pity:} \textit{"feel sorry"}, \textit{"smiles faces"}, \textit{"hope hopeless"} --- emotive, flowery descriptions that sentimentalise hardship.
+    \item \textbf{Power asymmetry:} \textit{"burden society"}, \textit{"poverty stricken"}, \textit{"think poor"}, \textit{"little girl"} --- language that reduces people to their vulnerability.
+    \item \textbf{Shallow solutions / clichés:} \textit{"mother teresa"}, \textit{"developed country"} --- invoking well-known figures or broad generalisations as substitutes for substantive discussion.
+\end{itemize}
+
+The Not-PCL bigrams are strikingly different in character: they are \textbf{factual, institutional, or geographic}: \textit{"said statement"}, \textit{"humanitarian assistance"}, \textit{"refugee camp"}, \textit{"social security"}, \textit{"new zealand"}, \textit{"los angeles"}, \textit{"50 000"}. Several relate to neutral reporting (\textit{"anti immigrant"}, \textit{"illegal immigrants"}, \textit{"afghan refugees"}) or clinical descriptions (\textit{"disabled list"}, \textit{"intellectually disabled"}). These bigrams describe vulnerable groups without the emotive or condescending framing that characterises PCL.
+
+This confirms the PCL paper's finding that certain categories (e.g. \textbf{Compassion}, \textbf{Unbalanced power relations}) rely on identifiable lexical cues, while also showing that the boundary between PCL and neutral text is \textbf{contextual}. Words like \textit{"need"}, \textit{"hope"}, and \textit{"poor"} appear in both classes, and their patronising interpretation depends on surrounding framing.
 
 \paragraph{Impact Statement.}
-\todo{Explain how this insight influences your approach to the PCL
-classification task.}
+
+\begin{enumerate}
+    \item \textbf{Contexualised model required.} Individual words like \textit{"need"}, \textit{"hope"}, and \textit{"poor"} appear in both classes; it is the surrounding framing that makes them patronising. A bag-of-words or averaged-embedding approach would conflate these usages, confirming that a \textbf{contextualised language model} (e.g. RoBERTa) is necessary to capture the distinction.
+    \item \textbf{Minimal text preprocessing.} The discriminative bigrams consist of common English words in specific combinations. Aggressive preprocessing (e.g. stop-word removal or lemmatisation) would destroy phrases like \textit{"feel sorry"} or \textit{"need giving"} that carry the patronising signal. We should feed \textbf{raw text} into the transformer tokeniser with no cleaning beyond what the tokeniser handles natively.
+\end{enumerate}
 
 % ==============================================================
 \section{Proposed Approach}
@@ -143,7 +179,7 @@ methodology, data strategy, or any other key components. Include figures or
 flowcharts if helpful.}
 
 % Example flowchart placeholder:
-% \begin{figure}[H]
+% \begin{figure}
 %     \centering
 %     \includegraphics[width=0.8\textwidth]{figures/approach.png}
 %     \caption{\todo{Overview of the proposed approach.}}
@@ -185,7 +221,7 @@ set. Categorise the types of errors. Are there patterns -- e.g.\ sarcasm,
 specific keywords, sentence length? Include concrete examples in a table.}
 
 % Example error analysis table:
-% \begin{table}[H]
+% \begin{table}
 %     \centering
 %     \caption{Examples of misclassified instances on the dev set.}
 %     \label{tab:errors}
@@ -210,7 +246,7 @@ comparison with baseline predictions, per-category performance breakdown,
 or custom metrics. Include figures/tables and explain what they reveal.}
 
 % Example confusion matrix placeholder:
-% \begin{figure}[H]
+% \begin{figure}
 %     \centering
 %     \includegraphics[width=0.5\textwidth]{figures/confusion_matrix.png}
 %     \caption{\todo{Confusion matrix on the official dev set.}}
