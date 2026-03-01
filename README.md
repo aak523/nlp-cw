@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ### 2. Clone the dataset repository
 
 ```bash
-git clone https://github.com/Perez-AlmendrosC/dontpatronizeme
+git clone https://github.com/Perez-AlmendrosC/dontpatronizeme.git
 ```
 
 ### 3. Download the PCL data file
