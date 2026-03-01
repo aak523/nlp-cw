@@ -12,6 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import (
     AutoTokenizer,
+    AutoConfig,
     AutoModelForSequenceClassification,
     get_linear_schedule_with_warmup,
 )
@@ -187,8 +188,10 @@ def train():
 
     # ── Model ──
     print(f"Loading model: {MODEL_NAME}")
+    config = AutoConfig.from_pretrained(MODEL_NAME, num_labels=2)
+    config.cls_dropout = CLASSIFIER_DROPOUT
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME, num_labels=2, classifier_dropout=CLASSIFIER_DROPOUT
+        MODEL_NAME, config=config
     )
     model.float()  # ensure full float32 precision
     model.to(device)
