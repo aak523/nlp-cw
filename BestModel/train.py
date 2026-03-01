@@ -21,12 +21,14 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 MODEL_NAME = "microsoft/deberta-v3-base"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
-LEARNING_RATE = 2e-5
-WEIGHT_DECAY = 0.01
+ACCUMULATION_STEPS = 2  # effective batch size = 32
+BACKBONE_LR = 2e-5
+HEAD_LR = 1e-4
+WEIGHT_DECAY = 0.05
 WARMUP_RATIO = 0.1
 EPOCHS = 15
 PATIENCE = 5
-POS_WEIGHT = 3.0  # moderate upweighting (not the full 5.27)
+CLASSIFIER_DROPOUT = 0.15
 SEED = 42
 
 # Paths (relative to project root)
@@ -123,7 +125,7 @@ def compute_class_weights(labels):
 
 
 def evaluate(model, dataloader, device):
-    """Evaluate model on a dataloader. Returns metrics and raw probabilities."""
+    """Evaluate model on a dataloader. Returns best-threshold metrics and raw probabilities."""
     model.eval()
     all_probs = []
     all_labels = []
@@ -142,13 +144,21 @@ def evaluate(model, dataloader, device):
 
     all_probs = np.array(all_probs)
     all_labels = np.array(all_labels)
-    preds = (all_probs >= 0.5).astype(int)
 
-    f1 = f1_score(all_labels, preds)
+    # Sweep thresholds to find optimal F1
+    best_f1, best_thresh = 0.0, 0.5
+    for thresh in np.arange(0.30, 0.61, 0.02):
+        preds = (all_probs >= thresh).astype(int)
+        f = f1_score(all_labels, preds)
+        if f > best_f1:
+            best_f1 = f
+            best_thresh = thresh
+
+    preds = (all_probs >= best_thresh).astype(int)
     prec = precision_score(all_labels, preds, zero_division=0)
     rec = recall_score(all_labels, preds, zero_division=0)
 
-    return f1, prec, rec, all_probs, all_labels
+    return best_f1, prec, rec, all_probs, all_labels, best_thresh
 
 
 def train():
@@ -178,7 +188,7 @@ def train():
     # ── Model ──
     print(f"Loading model: {MODEL_NAME}")
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME, num_labels=2
+        MODEL_NAME, num_labels=2, classifier_dropout=CLASSIFIER_DROPOUT
     )
     model.float()  # ensure full float32 precision
     model.to(device)
@@ -187,11 +197,24 @@ def train():
     class_weights = compute_class_weights(df_train["label"].values)
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights.to(device))
 
-    # ── Optimiser ──
+    # ── Optimiser with differential learning rates ──
+    head_params = []
+    backbone_params = []
+    for name, param in model.named_parameters():
+        if "classifier" in name or "pooler" in name:
+            head_params.append(param)
+        else:
+            backbone_params.append(param)
+    print(f"  Param groups: backbone={len(backbone_params)}, head={len(head_params)}")
+
     optimizer = torch.optim.AdamW(
-        model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
+        [
+            {"params": backbone_params, "lr": BACKBONE_LR},
+            {"params": head_params, "lr": HEAD_LR},
+        ],
+        weight_decay=WEIGHT_DECAY,
     )
-    total_steps = len(train_loader) * EPOCHS
+    total_steps = (len(train_loader) // ACCUMULATION_STEPS) * EPOCHS
     warmup_steps = int(total_steps * WARMUP_RATIO)
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
@@ -205,33 +228,37 @@ def train():
         model.train()
         total_loss = 0.0
         n_batches = 0
+        optimizer.zero_grad()
 
-        for batch in train_loader:
+        for step, batch in enumerate(train_loader, 1):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
 
-            optimizer.zero_grad()
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             logits = outputs.logits.float()  # ensure float32 for loss
-            loss = criterion(logits, labels)
+            loss = criterion(logits, labels) / ACCUMULATION_STEPS
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-            scheduler.step()
 
-            total_loss += loss.item()
+            total_loss += loss.item() * ACCUMULATION_STEPS
             n_batches += 1
+
+            if step % ACCUMULATION_STEPS == 0 or step == len(train_loader):
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
 
         avg_loss = total_loss / n_batches
 
         # ── Evaluate on dev ──
-        f1, prec, rec, _, _ = evaluate(model, dev_loader, device)
+        f1, prec, rec, _, _, thresh = evaluate(model, dev_loader, device)
 
         print(
             f"Epoch {epoch}/{EPOCHS} | "
             f"Loss: {avg_loss:.4f} | "
-            f"Dev F1: {f1:.4f} | P: {prec:.4f} | R: {rec:.4f}"
+            f"Dev F1: {f1:.4f} | P: {prec:.4f} | R: {rec:.4f} | "
+            f"Thresh: {thresh:.2f}"
         )
 
         # ── Early stopping & checkpointing ──
