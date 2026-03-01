@@ -7,3 +7,7 @@
 
 # requirements file
 !requirements.txt
+
+# predictions
+!BestModel/dev.txt
+!BestModel/test.txt
