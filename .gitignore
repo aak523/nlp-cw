@@ -11,3 +11,6 @@
 # predictions
 !BestModel/dev.txt
 !BestModel/test.txt
+
+# README
+!README.md
