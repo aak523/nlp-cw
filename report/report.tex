@@ -32,8 +32,8 @@
 \author{
     Adam Kassam \\
     CID: 02374184 \\ [1em]
-    Leaderboard Name: Freaky K \\[0.5em]
-    Repository: https://github.com/aak523/nlp-cw
+    Leaderboard Name: AK \\[0.5em]
+    Repository: \url{https://github.com/aak523/nlp-cw}
 }
 \date{\today}
 
@@ -173,24 +173,36 @@ This confirms the PCL paper's finding that certain categories (e.g. \textbf{Comp
 % [4 Marks | up to 2 Hours]
 % ==============================================================
 
-\todo{Clearly articulate your strategy to surpass the RoBERTa-base baseline
-(F1 = 0.48 on dev, 0.49 on test). Describe your model architecture, training
-methodology, data strategy, or any other key components. Include figures or
-flowcharts if helpful.}
+\subsection{Model Selection}
 
-% Example flowchart placeholder:
-% \begin{figure}
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{figures/approach.png}
-%     \caption{\todo{Overview of the proposed approach.}}
-%     \label{fig:approach}
-% \end{figure}
+We fine-tune \textbf{DeBERTa-V3}~\cite{he2021debertav3} for binary sequence classification. We evaluate two variants: \texttt{microsoft/deberta-v3-base} (86M parameters) and \texttt{microsoft/deberta-v3-large} (304M parameters), selecting the final configuration by development-set F1.
+
+DeBERTa-V3 improves on the RoBERTa-base~\cite{liu2019roberta} baseline (F1\,=\,0.48 dev, 0.49 test) in two important respects. First, it uses \textbf{disentangled attention}~\cite{he2021deberta}, which encodes token content and relative position via separate matrices and computes attention scores over both simultaneously. This is particularly well-suited to PCL detection, where condescension is expressed through phrasing and word order rather than individual lexical items alone. Second, the V3 series replaces masked language modelling with an \textbf{ELECTRA-style replaced-token-detection} pre-training objective~\cite{clark2020electra} on a significantly larger corpus, yielding richer contextual representations. Despite being ``base''-sized, \texttt{deberta-v3-base} surpasses RoBERTa-large on standard benchmarks, making it a well-motivated upgrade.
+
+\subsection{Training Methodology}
+
+The model is fine-tuned end-to-end with the following design decisions, each motivated by the dataset characteristics identified in Section~\ref{sec:ex2}.
+
+\paragraph{Class-weighted cross-entropy loss.} The 9.5:1 negative-to-positive imbalance means a trivial classifier would achieve 90.5\% accuracy. We assign balanced class weights $w_c = N_{\text{total}} / (2 N_c)$ to the cross-entropy loss, increasing the gradient contribution of each positive example in proportion to its under-representation.
+
+\paragraph{Label smoothing.} We apply a smoothing coefficient of $\varepsilon = 0.1$. With only ${\sim}500$ positive training examples, many of which are borderline positives where annotators only partially agreed (Figure~\ref{fig:eda1}b), the model can easily become overconfident, causing erratic precision--recall swings across epochs. Label smoothing encourages calibrated probability estimates rather than collapsed outputs near 0 or 1.
+
+\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($5 \times 10^{-5}$) than the backbone ($8 \times 10^{-6}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give DeBERTa-V3 its advantage.
+
+\paragraph{Threshold tuning.}
+Rather than classifying at the default threshold of 0.5, we sweep thresholds over $[0.30, 0.60]$ on the development set and select the value maximising F1 for the positive class. Given the severe class imbalance, the optimal threshold is typically below 0.5.
+
+\paragraph{Regularisation and early stopping.}
+We apply weight decay of 0.1, classifier dropout of 0.3, and gradient clipping (max norm 1.0). Early stopping with patience 5 selects the checkpoint with the best development F1 across up to 15 epochs.
 
 \subsection*{Rationale and Expected Outcome}
 
-\todo{Justify why you expect this approach to outperform the baseline.
-Reference insights from your EDA (Section~\ref{sec:ex2}) and literature
-review (Section~\ref{sec:ex1}) where relevant. State your expected outcome.}
+Two findings from the EDA directly motivate this approach. First, the boundary between PCL and neutral language is highly contextual (Section~\ref{sec:ex2}): words such as \textit{``need''}, \textit{``hope''}, and \textit{``poor''} appear in both classes, and it is the surrounding vocabulary that signals condescension. This rules out bag-of-words or
+averaged-embedding methods and confirms the need for a contextualised transformer. Second, positive examples tend to be longer than negative ones, motivating \texttt{max\_length\,=\,256} to avoid truncating discriminative content.
+
+DeBERTa-V3's disentangled attention is well-suited to capturing the patterns identified in the bigram analysis (Figure~\ref{fig:eda2}). For example, saviour framing (\textit{``feed hungry''}, \textit{``restore hope''}) and pity language (\textit{``feel sorry''}) that depend not only on the words themselves but on the surrounding structure. The paper's own error analysis (Section~\ref{sec:ex1}) showed that its BERT-based models struggled with cases requiring world knowledge and contextual framing; the V3 pre-training objective, which conditions every token on its full context, provides stronger representations for exactly this type of inference.
+
+We expect \texttt{deberta-v3-base} to comfortably exceed the RoBERTa-base baseline. Upgrading to \texttt{deberta-v3-large} may yield a further improvement at the cost of additional training time, and we report results for the better-performing configuration.
 
 % ==============================================================
 \section{Implementation and Global Evaluation}
@@ -204,7 +216,7 @@ The code, trained model, and prediction files (\texttt{dev.txt},
 repository:
 
 \begin{center}
-    https://github.com/aak523/nlp-cw
+    \url{https://github.com/aak523/nlp-cw}
 \end{center}
 
 % ==============================================================
@@ -254,9 +266,9 @@ or custom metrics. Include figures/tables and explain what they reveal.}
 % \end{figure}
 
 % ==============================================================
-% Optional: References
+% References
 % ==============================================================
-% \bibliographystyle{plain}
-% \bibliography{references}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}
