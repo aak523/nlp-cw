@@ -74,7 +74,7 @@ def find_best_threshold(probs, labels, low=0.30, high=0.70, step=0.01):
 
 def evaluate_with_n_layers(model, n_layers, dev_loader, dev_labels, device):
     """Temporarily truncate the model to n_layers and evaluate."""
-    encoder = model.deberta.encoder
+    encoder = model.roberta.encoder
     original_layers = encoder.layer
     original_num_hidden = model.config.num_hidden_layers
 
