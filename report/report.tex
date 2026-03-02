@@ -13,6 +13,7 @@
 \usepackage{subcaption}
 \usepackage{xcolor}
 \usepackage{float}
+\usepackage{tabularx}
 
 \hypersetup{
     colorlinks=true,
@@ -228,27 +229,46 @@ repository:
 
 \subsection{Error Analysis}
 
-\todo{Manually inspect samples where the model failed on the official dev
-set. Categorise the types of errors. Are there patterns -- e.g.\ sarcasm,
-specific keywords, sentence length? Include concrete examples in a table.}
+Manual inspection of the 180 misclassified dev examples (92 false negatives, 88 false positives) reveals a few common failure patterns, illustrated in Table~\ref{tab:errors}.
 
-% Example error analysis table:
-% \begin{table}
-%     \centering
-%     \caption{Examples of misclassified instances on the dev set.}
-%     \label{tab:errors}
-%     \begin{tabular}{p{0.55\textwidth}ccc}
-%         \toprule
-%         \textbf{Text (truncated)} & \textbf{True} & \textbf{Pred} & \textbf{Error Type} \\
-%         \midrule
-%         \todo{Example 1...} & 1 & 0 & \todo{Type} \\
-%         \todo{Example 2...} & 0 & 1 & \todo{Type} \\
-%         \bottomrule
-%     \end{tabular}
-% \end{table}
+\paragraph{False negatives: PCL expressed through framing.} The model consistently fails to detect PCL when the patronising tone is caused by the narrative rather than explicit word choice.
 
-\todo{Discuss what these errors reveal about the model's behaviour and
-limitations.}
+The first FN example in Table~\ref{tab:errors} exhibits classic \textit{saviour framing}. The writer positions volunteers as rescuers ``offering a new lease on life'' to passive, helpless recipients, yet the surface language is journalistic, containing none of the overtly emotive language the model has learnt to associate with PCL.
+
+Similarly, the second FN example dehumanises homeless people through the phrase ``placing them where they belong'', but this is embedded in a rhetorical question that reads as policy commentary, a register the model does not flag.
+
+The third FN uses an emotive metaphor (``been to hell and back'') to frame a homeless person's life as a spectacle of suffering, which annotators agreed was patronising but which the model likely reads as a sympathetic human-interest story.
+
+This pattern aligns with the finding from the bigram EDA (Section~\ref{sec:ex2}) that words like \textit{``need''} and \textit{``hope''} appear in both classes: the model has learnt surface co-occurrences but not the framing that make them patronising.
+
+\paragraph{False positives: keyword presence without patronising intent.} The FP errors follow an equally consistent pattern: the model appears to treat certain keywords as near-sufficient evidence of PCL, even when the surrounding context is neutral, humanising, or metaphorical.
+
+In the fourth example in Table~\ref{tab:errors}, the word \textit{hopelessness} appears in a direct quotation with no patronising framing whatsoever.
+
+The fifth example is arguably the opposite of PCL, as the writer explicitly resists reducing a homeless individual to a stereotype.
+
+The sixth example uses \textit{refugees} metaphorically to describe political party workers, with no reference to a vulnerable community at all.
+
+Taken together, the FP errors suggest the model has learnt a shallow association between the retrieval keywords and the positive class, without properly understanding the broader context in many cases.
+
+\begin{table}[H]
+    \centering
+    \caption{Representative misclassified examples from the dev set.}
+    \label{tab:errors}
+    \begin{tabularx}{\textwidth}{X c c c}
+        \toprule
+        \textbf{Text (truncated)} & \textbf{True} & \textbf{Pred} & \textbf{Type} \\
+        \midrule
+        \textit{``Instead of restaurants and malls, they go into the nooks and crannies of the capital, approaching every homeless person they meet to offer them a new lease on life.''} & 1 & 0 & FN \\[4pt]
+        \textit{``Are there systems for actually going out, picking up the homeless, and placing them where they belong?''} & 1 & 0 & FN \\[4pt]
+        \textit{``Bombarded by schizophrenia, addiction and homelessness, you might say that Eoghan O'Driscoll has been to hell and back. But he is finding a new balance through painting.''} & 1 & 0 & FN \\[4pt]
+        \midrule
+        \textit{``He stated he had no wishes to be dead, no feelings of hopelessness.''} & 0 & 1 & FP \\[4pt]
+        \textit{``His friends at the Chevron want people to know he wasn't just a faceless homeless person. He was their friend and their family.''} & 0 & 1 & FP \\[4pt]
+        \textit{``Workers of the party crying out that they have been living like refugees since the party lost the 2015 general election.''} & 0 & 1 & FP \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
 
 \subsection{Additional Local Evaluation}
 
