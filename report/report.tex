@@ -69,7 +69,7 @@ The paper also provides exploratory baselines using SVMs, a BiLSTM, and fine-tun
 
 \subsection*{Q3. Key Weaknesses}
 
-\paragraph{Limited modelling contribution.} The authors apply well-known baselines (SVMs, BiLSTM, BERT variants) without proposing any novel architecture or training strategy tailored to PCL. They identify that certain categories (e.g.\ \textit{Metaphor}) require world knowledge, yet do not explore methods to inject such knowledge (e.g.\ knowledge graph embeddings or auxiliary training objectives). The choice to represent paragraphs using averaged Word2Vec embeddings for the SVM-WV baseline, which entirely discards word order, is also not discussed, despite this seeming particularly problematic for detecting subtle language patterns.
+\paragraph{Limited modelling contribution.} The authors apply well-known baselines (SVMs, BiLSTM, BERT variants) without proposing any novel architecture or training strategy tailored to PCL. They identify that certain categories (e.g.\ \textit{Metaphor}) require world knowledge, yet do not explore methods to inject such knowledge (e.g.\ knowledge graph embedding). The choice to represent paragraphs using averaged Word2Vec embeddings for the SVM-WV baseline, which entirely discards word order, is also not discussed, despite this seeming particularly problematic for detecting subtle language patterns.
 
 \paragraph{Absence of ablation studies.} The paper includes no ablations. For example, it does not investigate whether the retrieval keyword affects model performance, whether the annotation threshold (labels $\geq 2$ as positive vs.\ other cutoffs) impacts results, or whether providing the keyword as an additional input feature helps. This makes it difficult to understand \textit{why} the models succeed or fail in specific cases.
 
@@ -123,7 +123,7 @@ Panel (c) shows that \textbf{PCL-positive paragraphs tend to be longer} than neg
 \paragraph{Impact Statement.}
 
 \begin{enumerate}
-    \item \textbf{Class-weighted training.} A naive classifier predicting "Not PCL" for every input would achieve \~90.5\% accuracy, so accuracy is a misleading metric. We will use \textbf{F1 for the positive class} as the primary metric (matching the shared task) and address the imbalance during training via class-weighted cross-entropy loss or focal loss.
+    \item \textbf{Class-weighted training.} A naive classifier predicting "Not PCL" for every input would achieve 90.5\% accuracy, so accuracy is a misleading metric. We will use \textbf{F1 for the positive class} as the primary metric (matching the shared task) and address the imbalance during training via class-weighted cross-entropy loss or focal loss.
     \item \textbf{Tokeniser \texttt{max\_length}.} The word-count distribution informs our choice of maximum sequence length for the transformer tokeniser. Since PCL paragraphs skew longer and we do not want to truncate informative content, we should set \texttt{max\_length} generously (e.g. 256 subword tokens) and verify that truncation affects only a negligible fraction of positive examples.
 \end{enumerate}
 
@@ -151,10 +151,10 @@ We compute the \textbf{log-odds ratio} of bigram frequencies between the PCL-pos
 
 The PCL-associated bigrams fall into clear \textbf{patronising archetypes} from the paper's taxonomy:
 \begin{itemize}
-    \item \textbf{Saviour framing:} \textit{"feed hungry"}, \textit{"families help"}, \textit{"need giving"}, \textit{"giving need"}, \textit{"reaching need"}, \textit{"restore hope"} --- language that positions the speaker as a rescuer.
-    \item \textbf{Compassion / pity:} \textit{"feel sorry"}, \textit{"smiles faces"}, \textit{"hope hopeless"} --- emotive, flowery descriptions that sentimentalise hardship.
-    \item \textbf{Power asymmetry:} \textit{"burden society"}, \textit{"poverty stricken"}, \textit{"think poor"}, \textit{"little girl"} --- language that reduces people to their vulnerability.
-    \item \textbf{Shallow solutions / clichés:} \textit{"mother teresa"}, \textit{"developed country"} --- invoking well-known figures or broad generalisations as substitutes for substantive discussion.
+    \item \textbf{Saviour framing:} \textit{"feed hungry"}, \textit{"families help"}, \textit{"need giving"}, \textit{"giving need"}, \textit{"reaching need"}, \textit{"restore hope"}: language that positions the speaker as a rescuer.
+    \item \textbf{Compassion / pity:} \textit{"feel sorry"}, \textit{"smiles faces"}, \textit{"hope hopeless"}: emotive, flowery descriptions that sentimentalise hardship.
+    \item \textbf{Power asymmetry:} \textit{"burden society"}, \textit{"poverty stricken"}, \textit{"think poor"}, \textit{"little girl"}: language that reduces people to their vulnerability.
+    \item \textbf{Shallow solutions / clichés:} \textit{"mother teresa"}, \textit{"developed country"}: invoking well-known figures or broad generalisations as substitutes for substantive discussion.
 \end{itemize}
 
 The Not-PCL bigrams are strikingly different in character: they are \textbf{factual, institutional, or geographic}: \textit{"said statement"}, \textit{"humanitarian assistance"}, \textit{"refugee camp"}, \textit{"social security"}, \textit{"new zealand"}, \textit{"los angeles"}, \textit{"50 000"}. Several relate to neutral reporting (\textit{"anti immigrant"}, \textit{"illegal immigrants"}, \textit{"afghan refugees"}) or clinical descriptions (\textit{"disabled list"}, \textit{"intellectually disabled"}). These bigrams describe vulnerable groups without the emotive or condescending framing that characterises PCL.
@@ -186,15 +186,13 @@ The model is fine-tuned end-to-end with the following design decisions, each mot
 
 \paragraph{Class-weighted cross-entropy loss.} The 9.5:1 negative-to-positive imbalance means a trivial classifier would achieve 90.5\% accuracy. We assign balanced class weights $w_c = N_{\text{total}} / (2 N_c)$ to the cross-entropy loss, increasing the gradient contribution of each positive example in proportion to its under-representation.
 
-\paragraph{Label smoothing.} We apply a smoothing coefficient of $\varepsilon = 0.1$. With only ${\sim}500$ positive training examples, many of which are borderline positives where annotators only partially agreed (Figure~\ref{fig:eda1}b), the model can easily become overconfident, causing erratic precision--recall swings across epochs. Label smoothing encourages calibrated probability estimates rather than collapsed outputs near 0 or 1.
-
-\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($5 \times 10^{-5}$) than the backbone ($8 \times 10^{-6}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give DeBERTa-V3 its advantage.
+\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($1 \times 10^{-4}$) than the backbone ($2 \times 10^{-5}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give DeBERTa-V3 its advantage.
 
 \paragraph{Threshold tuning.}
 Rather than classifying at the default threshold of 0.5, we sweep thresholds over $[0.30, 0.60]$ on the development set and select the value maximising F1 for the positive class. Given the severe class imbalance, the optimal threshold is typically below 0.5.
 
 \paragraph{Regularisation and early stopping.}
-We apply weight decay of 0.1, classifier dropout of 0.3, and gradient clipping (max norm 1.0). Early stopping with patience 5 selects the checkpoint with the best development F1 across up to 15 epochs.
+We apply weight decay of 0.05, classifier dropout of 0.15, and gradient clipping (max norm 1.0). Early stopping with patience 5 selects the checkpoint with the best development F1 across up to 15 epochs.
 
 \subsection*{Rationale and Expected Outcome}
 
