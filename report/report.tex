@@ -176,7 +176,7 @@ This confirms the PCL paper's finding that certain categories (e.g. \textbf{Comp
 
 \subsection{Model Selection}
 
-We fine-tune \textbf{DeBERTa-V3}~\cite{he2021debertav3} for binary sequence classification. We evaluate two variants: \texttt{microsoft/deberta-v3-base} (86M parameters) and \texttt{microsoft/deberta-v3-large} (304M parameters), selecting the final configuration by development-set F1.
+We fine-tune \textbf{DeBERTa-V3-base}~\cite{he2021debertav3} (\texttt{microsoft/deberta-v3-base}, 86M parameters) for binary sequence classification.
 
 DeBERTa-V3 improves on the RoBERTa-base~\cite{liu2019roberta} baseline (F1\,=\,0.48 dev, 0.49 test) in two important respects. First, it uses \textbf{disentangled attention}~\cite{he2021deberta}, which encodes token content and relative position via separate matrices and computes attention scores over both simultaneously. This is particularly well-suited to PCL detection, where condescension is expressed through phrasing and word order rather than individual lexical items alone. Second, the V3 series replaces masked language modelling with an \textbf{ELECTRA-style replaced-token-detection} pre-training objective~\cite{clark2020electra} on a significantly larger corpus, yielding richer contextual representations. Despite being ``base''-sized, \texttt{deberta-v3-base} surpasses RoBERTa-large on standard benchmarks, making it a well-motivated upgrade.
 
@@ -203,7 +203,7 @@ averaged-embedding methods and confirms the need for a contextualised transforme
 
 DeBERTa-V3's disentangled attention is well-suited to capturing the patterns identified in the bigram analysis (Figure~\ref{fig:eda2}). For example, saviour framing (\textit{``feed hungry''}, \textit{``restore hope''}) and pity language (\textit{``feel sorry''}) that depend not only on the words themselves but on the surrounding structure. The paper's own error analysis (Section~\ref{sec:ex1}) showed that its BERT-based models struggled with cases requiring world knowledge and contextual framing; the V3 pre-training objective, which conditions every token on its full context, provides stronger representations for exactly this type of inference.
 
-We expect \texttt{deberta-v3-base} to comfortably exceed the RoBERTa-base baseline. Upgrading to \texttt{deberta-v3-large} may yield a further improvement at the cost of additional training time, and we report results for the better-performing configuration.
+We expect \texttt{deberta-v3-base} to comfortably exceed the RoBERTa-base baseline while remaining efficient to fine-tune on a single GPU.
 
 % ==============================================================
 \section{Implementation and Global Evaluation}
