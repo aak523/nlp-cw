@@ -19,7 +19,7 @@ from transformers import (
 from sklearn.metrics import f1_score, precision_score, recall_score
 
 # ── Configuration ────────────────────────────────────────────
-MODEL_NAME = "microsoft/deberta-v3-base"
+MODEL_NAME = "FacebookAI/roberta-base"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
 ACCUMULATION_STEPS = 2  # effective batch size = 32
@@ -189,7 +189,7 @@ def train():
     # ── Model ──
     print(f"Loading model: {MODEL_NAME}")
     config = AutoConfig.from_pretrained(MODEL_NAME, num_labels=2)
-    config.cls_dropout = CLASSIFIER_DROPOUT
+    config.classifier_dropout = CLASSIFIER_DROPOUT
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME, config=config
     )

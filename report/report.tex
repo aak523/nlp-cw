@@ -176,9 +176,9 @@ This confirms the PCL paper's finding that certain categories (e.g. \textbf{Comp
 
 \subsection{Model Selection}
 
-We fine-tune \textbf{DeBERTa-V3-base}~\cite{he2021debertav3} (\texttt{microsoft/deberta-v3-base}, 86M parameters) for binary sequence classification.
+We fine-tune \textbf{RoBERTa-base}~\cite{liu2019roberta} (\texttt{roberta-base}, 125M parameters) for binary sequence classification.
 
-DeBERTa-V3 improves on the RoBERTa-base~\cite{liu2019roberta} baseline (F1\,=\,0.48 dev, 0.49 test) in two important respects. First, it uses \textbf{disentangled attention}~\cite{he2021deberta}, which encodes token content and relative position via separate matrices and computes attention scores over both simultaneously. This is particularly well-suited to PCL detection, where condescension is expressed through phrasing and word order rather than individual lexical items alone. Second, the V3 series replaces masked language modelling with an \textbf{ELECTRA-style replaced-token-detection} pre-training objective~\cite{clark2020electra} on a significantly larger corpus, yielding richer contextual representations. Despite being ``base''-sized, \texttt{deberta-v3-base} surpasses RoBERTa-large on standard benchmarks, making it a well-motivated upgrade.
+RoBERTa-base is a robustly optimised variant of BERT~\cite{devlin2019bert}, pre-trained on a larger corpus (160\,GB of text) with dynamic masking, larger mini-batches, and no next-sentence prediction objective. These changes yield stronger contextual representations without any architectural modification to the original transformer encoder. This is well-suited to PCL detection, where condescension is expressed through phrasing and context rather than individual lexical items alone: the richer pre-training gives the model better priors for distinguishing subtle pragmatic cues in a low-resource fine-tuning setting with only ${\sim}800$ positive training examples.
 
 \subsection{Training Methodology}
 
@@ -186,7 +186,7 @@ The model is fine-tuned end-to-end with the following design decisions, each mot
 
 \paragraph{Class-weighted cross-entropy loss.} The 9.5:1 negative-to-positive imbalance means a trivial classifier would achieve 90.5\% accuracy. We assign balanced class weights $w_c = N_{\text{total}} / (2 N_c)$ to the cross-entropy loss, increasing the gradient contribution of each positive example in proportion to its under-representation.
 
-\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($1 \times 10^{-4}$) than the backbone ($2 \times 10^{-5}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give DeBERTa-V3 its advantage.
+\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($1 \times 10^{-4}$) than the backbone ($2 \times 10^{-5}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give RoBERTa its advantage.
 
 \paragraph{Threshold tuning.}
 Rather than classifying at the default threshold of 0.5, we sweep thresholds over $[0.30, 0.60]$ on the development set and select the value maximising F1 for the positive class. Given the severe class imbalance, the optimal threshold is typically below 0.5.
@@ -199,9 +199,9 @@ We apply weight decay of 0.05, classifier dropout of 0.15, and gradient clipping
 Two findings from the EDA directly motivate this approach. First, the boundary between PCL and neutral language is highly contextual (Section~\ref{sec:ex2}): words such as \textit{``need''}, \textit{``hope''}, and \textit{``poor''} appear in both classes, and it is the surrounding vocabulary that signals condescension. This rules out bag-of-words or
 averaged-embedding methods and confirms the need for a contextualised transformer. Second, positive examples tend to be longer than negative ones, motivating \texttt{max\_length\,=\,256} to avoid truncating discriminative content.
 
-DeBERTa-V3's disentangled attention is well-suited to capturing the patterns identified in the bigram analysis (Figure~\ref{fig:eda2}). For example, saviour framing (\textit{``feed hungry''}, \textit{``restore hope''}) and pity language (\textit{``feel sorry''}) that depend not only on the words themselves but on the surrounding structure. The paper's own error analysis (Section~\ref{sec:ex1}) showed that its BERT-based models struggled with cases requiring world knowledge and contextual framing; the V3 pre-training objective, which conditions every token on its full context, provides stronger representations for exactly this type of inference.
+RoBERTa's contextualised representations are well-suited to capturing the patterns identified in the bigram analysis (Figure~\ref{fig:eda2}). For example, saviour framing (\textit{``feed hungry''}, \textit{``restore hope''}) and pity language (\textit{``feel sorry''}) depend not only on the words themselves but on the surrounding structure. The paper's own error analysis (Section~\ref{sec:ex1}) showed that its BERT-based models struggled with cases requiring world knowledge and contextual framing; RoBERTa's richer pre-training, which conditions every token on its full context over a much larger corpus than the original BERT, provides stronger representations for exactly this type of inference.
 
-We expect \texttt{deberta-v3-base} to comfortably exceed the RoBERTa-base baseline while remaining efficient to fine-tune on a single GPU.
+Combined with class-weighted loss and threshold tuning, we expect \texttt{roberta-base} to comfortably exceed the untuned RoBERTa-base baseline (F1\,=\,0.48 dev) while remaining efficient to fine-tune on a single GPU.
 
 % ==============================================================
 \section{Implementation and Global Evaluation}
