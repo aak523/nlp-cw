@@ -18,7 +18,7 @@ git clone https://github.com/Perez-AlmendrosC/dontpatronizeme.git
 
 ### 3. Download the PCL data file
 
-The `dontpatronizeme_pcl.tsv` file is not included in the repository and must be downloaded manually from the task organisers. Place it at:
+The `dontpatronizeme_pcl.tsv` file is not included in the repository and must be downloaded manually from the task organisers/module lead. Place it at:
 
 ```txt
 dontpatronizeme/semeval-2022/dontpatronizeme_pcl.tsv
