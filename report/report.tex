@@ -270,20 +270,31 @@ Taken together, the FP errors suggest the model has learnt a shallow association
     \end{tabularx}
 \end{table}
 
-\subsection{Additional Local Evaluation}
+\subsection{Layer Ablation Study}
 
-\todo{Perform at least one additional local evaluation technique. Options
-include: ablation study, confusion matrix analysis, precision--recall curves,
-comparison with baseline predictions, per-category performance breakdown,
-or custom metrics. Include figures/tables and explain what they reveal.}
+To understand how much of the model's depth is necessary for PCL detection, we conduct an ablation study in which transformer layers are progressively removed from the trained model. Starting from the full 12-layer DeBERTa-V3-base checkpoint, we truncate the encoder to its first $N$ layers and evaluate directly on the dev set (without retraining), with threshold tuning applied at each configuration. Results are shown in Table~\ref{tab:ablation}.
 
-% Example confusion matrix placeholder:
-% \begin{figure}
-%     \centering
-%     \includegraphics[width=0.5\textwidth]{figures/confusion_matrix.png}
-%     \caption{\todo{Confusion matrix on the official dev set.}}
-%     \label{fig:cm}
-% \end{figure}
+\begin{table}[H]
+    \centering
+    \caption{Layer ablation results on the dev set. Each row uses only the first $N$ of 12 transformer layers from the trained checkpoint, evaluated with threshold tuning. $\Delta$\,F1 is relative to the full model.}
+    \label{tab:ablation}
+    \begin{tabular}{rcccc}
+        \toprule
+        \textbf{Layers} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{$\Delta$\,F1} \\
+        \midrule
+        12 (full) & 0.5431 & 0.5487 & 0.5377 & --- \\
+        10        & 0.2890 & 0.3312 & 0.2563 & $-$0.2542 \\
+        8         & 0.1736 & 0.0951 & 1.0000 & $-$0.3695 \\
+        6         & 0.2485 & 0.1779 & 0.4121 & $-$0.2947 \\
+        4         & 0.1924 & 0.1270 & 0.3970 & $-$0.3507 \\
+        2         & 0.1740 & 0.0953 & 1.0000 & $-$0.3692 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Analysis.} The full 12-layer model is essential for meaningful performance. Removing just two layers (12$\to$10) nearly halves F1 from 0.54 to 0.29, and all configurations below 10 layers collapse to near the na\"ive ``predict all positive'' baseline (F1\,$\approx$\,0.17, corresponding to the 9.5\% positive class rate). The 8-layer and 2-layer configurations exhibit this degenerate behaviour explicitly: recall reaches 1.0 while precision drops to the class prior, meaning the truncated model has lost the ability to discriminate between classes entirely.
+
+This result is consistent with the error analysis in the previous section. PCL detection depends on recognising subtle cues: tone, framing, and implied attitudes, rather than surface lexical patterns. These higher-order features are built up incrementally through the transformer stack, with the upper layers (11--12) contributing disproportionately. The lower layers alone capture syntax and word-level semantics, but not the contextual framing that distinguishes patronising language from neutral reporting about vulnerable communities.
 
 % ==============================================================
 % References
