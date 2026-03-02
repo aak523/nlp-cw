@@ -49,9 +49,9 @@
 
 \subsection*{Q1. Primary Contributions}
 
-The authors address the problem of detecting patronising and condescending language (PCL) towards vulnerable communities in news media. PCL is a subtle, often well-intentioned form of harmful language that had been largely overlooked by NLP research in favour of more explicit phenomena such as hate speech and offensive language.
+The paper introduces a dataset and annotation framework for detecting patronising and condescending language (PCL) in news media. PCL is a form of subtle, often well-intentioned bias that NLP had largely ignored in favour of more overt phenomena like hate speech.
 
-The authors' primary contribution is a new annotated dataset of over 10,000 paragraphs extracted from the News on Web (NoW) corpus, retrieved using ten keywords related to vulnerable groups (e.g.\ \textit{homeless}, \textit{refugee}, \textit{immigrant}) across 20 English-speaking countries.
+The main contribution is a new annotated dataset of over 10,000 paragraphs drawn from the News on Web (NoW) corpus, retrieved via ten keywords related to vulnerable groups (e.g.\ \textit{homeless}, \textit{refugee}, \textit{immigrant}) across 20 English-speaking countries.
 
 Alongside the dataset, they propose a two-level taxonomy of PCL categories: three high-level groups (\textit{The Saviour}, \textit{The Expert}, \textit{The Poet}) subdivided into seven fine-grained subcategories such as \textit{Unbalanced power relations}, \textit{Shallow solution}, and \textit{Metaphor}.
 
@@ -59,21 +59,21 @@ The paper also provides exploratory baselines using SVMs, a BiLSTM, and fine-tun
 
 \subsection*{Q2. Technical Strengths}
 
-\paragraph{Originality and significance.} The dataset fills a genuine gap in NLP research on subtle harmful language. While prior work such as Wang and Potts (2019) modelled condescension in direct communication, this paper targets PCL in news media directed at vulnerable communities, which is a distinct and understudied setting. The two-level taxonomy provides a principled framework for categorising PCL that goes beyond binary detection.
+\paragraph{Originality and significance.} Prior work on condescension, such as Wang and Potts (2019), focused on direct interpersonal communication rather than media coverage of vulnerable groups, so the setting here is genuinely new. The two-level taxonomy also goes well beyond binary detection, offering a framework for analysing \textit{how} PCL manifests.
 
-\paragraph{Annotation methodology.} The annotation process is thorough: two primary annotators labelled the full dataset on a three-level scale, with a third annotator resolving total disagreements. Individual labels were combined into a five-point scale capturing degrees of agreement, and a second annotation pass used the BRAT tool to mark specific PCL spans with subcategory labels.
+\paragraph{Annotation methodology.} The annotation design is careful: two primary annotators labelled the full dataset on a three-level scale, with a third resolving complete disagreements. Aggregating labels into a five-point scale is a sensible way to preserve the gradient of annotator agreement rather than discarding it. A second pass using BRAT to mark specific spans and subcategories adds fine-grained supervision that most comparable datasets lack.
 
-\paragraph{Evaluation design.} The decomposition into binary detection (Task~1) and multi-label categorisation (Task~2) is well-motivated and provides a broad view of model capabilities. The choice of precision, recall, and F1 for the positive class is appropriate given the severe class imbalance (only 995 of 10,637 paragraphs are positive), where accuracy alone would be misleading. The error analysis is one of the paper's strongest elements: concrete misclassification examples are provided with specific explanations, revealing that false positives arise from superficially PCL-like language while false negatives involve categories requiring world knowledge.
+\paragraph{Evaluation design.} Splitting the problem into binary detection (Task~1) and multi-label categorisation (Task~2) gives a more complete picture of what models can and cannot do. Using F1 for the positive class rather than accuracy is the right call given only 995 of 10,637 paragraphs are positive. The error analysis is one of the paper's stronger sections: concrete examples are given for both false positives (superficially PCL-like phrasing) and false negatives (categories that require world knowledge), which is more useful than just reporting aggregate numbers.
 
-\paragraph{Accessibility.} The paper is clearly written. The sociolinguistics background and taxonomy definitions are accessible without prior NLP expertise.
+\paragraph{Accessibility.} The sociolinguistics background and taxonomy definitions are accessible to readers without prior NLP experience.
 
 \subsection*{Q3. Key Weaknesses}
 
-\paragraph{Limited modelling contribution.} The authors apply well-known baselines (SVMs, BiLSTM, BERT variants) without proposing any novel architecture or training strategy tailored to PCL. They identify that certain categories (e.g.\ \textit{Metaphor}) require world knowledge, yet do not explore methods to inject such knowledge (e.g.\ knowledge graph embedding). The choice to represent paragraphs using averaged Word2Vec embeddings for the SVM-WV baseline, which entirely discards word order, is also not discussed, despite this seeming particularly problematic for detecting subtle language patterns.
+\paragraph{Limited modelling contribution.} The paper applies standard baselines (SVMs, BiLSTM, BERT variants) rather than anything designed for the PCL task. The authors note that some subcategories require world knowledge yet do not attempt to address this, for instance by incorporating external knowledge sources. The SVM-WV baseline uses averaged Word2Vec embeddings, discarding word order entirely; this choice goes unexplained despite being particularly ill-suited to detecting subtle framing.
 
-\paragraph{Absence of ablation studies.} The paper includes no ablations. For example, it does not investigate whether the retrieval keyword affects model performance, whether the annotation threshold (labels $\geq 2$ as positive vs.\ other cutoffs) impacts results, or whether providing the keyword as an additional input feature helps. This makes it difficult to understand \textit{why} the models succeed or fail in specific cases.
+\paragraph{Absence of ablation studies.} There are no ablations of any kind. It is unclear whether the retrieval keyword affects performance, whether the choice of annotation threshold (labels $\geq 2$ as positive) is optimal, or whether feeding the keyword as an explicit input feature would help. Without these it is hard to know which design choices actually matter.
 
-\paragraph{Reproducibility gaps.} While hyperparameters for SVMs and the BiLSTM are reported and the dataset is released, several details needed for exact reproduction are missing: learning rates for BERT fine-tuning are not stated, the specific cross-validation fold splits are neither provided nor described, and preprocessing steps (e.g.\ tokenisation procedures per model) are not detailed. Approximate reproduction should be feasible, but exact replication would require guesswork.
+\paragraph{Reproducibility gaps.} Several details needed for reproduction are missing: BERT fine-tuning learning rates are not reported, cross-validation fold splits are not described, and per-model preprocessing steps are not explained. The dataset is released, so approximate reproduction is possible, but getting the exact published numbers would involve significant guesswork.
 
 % ==============================================================
 \section{Exploratory Data Analysis}
@@ -116,9 +116,9 @@ Imbalance ratio (neg:pos): 9.5:1.
 
 \paragraph{Analysis.}
 
-The dataset exhibits \textbf{severe class imbalance}: only around 9.5\% of paragraphs are labelled as PCL (positive), yielding a negative-to-positive ratio of roughly 9.5:1. The fine-grained label distribution (panel b) reveals that the majority of positives come from label 2 (borderline agreement between annotators), with very few paragraphs receiving the strongest label of 4. This suggests a long tail of "soft" positives where annotators only partially agreed on the presence of PCL.
+The most striking feature of the dataset is its class imbalance: only around 9.5\% of paragraphs are PCL-positive, a 9.5:1 negative-to-positive ratio. The fine-grained label distribution (panel b) shows that most positives received label 2, meaning the two primary annotators only borderline agreed. Very few paragraphs reached label 4, so a large portion of the positive class is "soft": cases where even human annotators were not confident.
 
-Panel (c) shows that \textbf{PCL-positive paragraphs tend to be longer} than negative ones. The median word count for positive examples is notably higher, and the interquartile range is wider. This makes intuitive sense: patronising language often involves elaboration, storytelling, or emotive description, all of which produce longer text.
+Panel (c) shows that positive examples tend to be longer (median 47 vs.\ 42 words). Patronising language often involves elaboration, emotive storytelling, or framing devices that require more words, so this is unsurprising.
 
 \paragraph{Impact Statement.}
 
@@ -147,7 +147,7 @@ association.}
 
 \paragraph{Analysis.}
 
-We compute the \textbf{log-odds ratio} of bigram frequencies between the PCL-positive and PCL-negative classes. This measures how much more (or less) likely each bigram is to appear in patronising text versus non-patronising text, after Laplace smoothing.
+We compute the \textbf{log-odds ratio} of bigram frequencies between the two classes (with Laplace smoothing), measuring how much more or less likely each bigram is in patronising vs.\ non-patronising text.
 
 The PCL-associated bigrams fall into clear \textbf{patronising archetypes} from the paper's taxonomy:
 \begin{itemize}
@@ -159,12 +159,12 @@ The PCL-associated bigrams fall into clear \textbf{patronising archetypes} from 
 
 The Not-PCL bigrams are strikingly different in character: they are \textbf{factual, institutional, or geographic}: \textit{"said statement"}, \textit{"humanitarian assistance"}, \textit{"refugee camp"}, \textit{"social security"}, \textit{"new zealand"}, \textit{"los angeles"}, \textit{"50 000"}. Several relate to neutral reporting (\textit{"anti immigrant"}, \textit{"illegal immigrants"}, \textit{"afghan refugees"}) or clinical descriptions (\textit{"disabled list"}, \textit{"intellectually disabled"}). These bigrams describe vulnerable groups without the emotive or condescending framing that characterises PCL.
 
-This confirms the PCL paper's finding that certain categories (e.g. \textbf{Compassion}, \textbf{Unbalanced power relations}) rely on identifiable lexical cues, while also showing that the boundary between PCL and neutral text is \textbf{contextual}. Words like \textit{"need"}, \textit{"hope"}, and \textit{"poor"} appear in both classes, and their patronising interpretation depends on surrounding framing.
+This is consistent with the paper's observation that certain PCL subcategories (\textbf{Compassion}, \textbf{Unbalanced power relations}) have recognisable lexical signatures. However, the boundary is clearly \textbf{contextual}: words like \textit{"need"}, \textit{"hope"}, and \textit{"poor"} appear on both sides, and whether they are patronising depends on the surrounding framing rather than the words themselves.
 
 \paragraph{Impact Statement.}
 
 \begin{enumerate}
-    \item \textbf{Contexualised model required.} Individual words like \textit{"need"}, \textit{"hope"}, and \textit{"poor"} appear in both classes; it is the surrounding framing that makes them patronising. A bag-of-words or averaged-embedding approach would conflate these usages, confirming that a \textbf{contextualised language model} (e.g. RoBERTa) is necessary to capture the distinction.
+    \item \textbf{Contextualised model required.} Since the same words appear in both PCL and non-PCL examples, a bag-of-words or averaged-embedding model would simply conflate them. A \textbf{contextualised language model} (e.g.\ RoBERTa) is needed to capture how framing, not just vocabulary, determines whether a passage is patronising.
     \item \textbf{Minimal text preprocessing.} The discriminative bigrams consist of common English words in specific combinations. Aggressive preprocessing (e.g. stop-word removal or lemmatisation) would destroy phrases like \textit{"feel sorry"} or \textit{"need giving"} that carry the patronising signal. We should feed \textbf{raw text} into the transformer tokeniser with no cleaning beyond what the tokeniser handles natively.
 \end{enumerate}
 
@@ -178,15 +178,15 @@ This confirms the PCL paper's finding that certain categories (e.g. \textbf{Comp
 
 We fine-tune \textbf{RoBERTa-base}~\cite{liu2019roberta} (\texttt{roberta-base}, 125M parameters) for binary sequence classification.
 
-RoBERTa-base is a robustly optimised variant of BERT~\cite{devlin2019bert}, pre-trained on a larger corpus (160\,GB of text) with dynamic masking, larger mini-batches, and no next-sentence prediction objective. These changes yield stronger contextual representations without any architectural modification to the original transformer encoder. This is well-suited to PCL detection, where condescension is expressed through phrasing and context rather than individual lexical items alone: the richer pre-training gives the model better priors for distinguishing subtle pragmatic cues in a low-resource fine-tuning setting with only ${\sim}800$ positive training examples.
+RoBERTa is a variant of BERT trained on a much larger corpus (160\,GB) with dynamic masking and without the next-sentence prediction objective~\cite{liu2019roberta}. The key motivation here is that PCL is expressed through framing rather than specific vocabulary, so a model with weaker contextual representations would likely conflate the surface words shared between patronising and neutral examples. With only ${\sim}800$ positive training examples there is also limited room to learn representations from scratch, making strong pre-training particularly important.
 
 \subsection{Training Methodology}
 
-The model is fine-tuned end-to-end with the following design decisions, each motivated by the dataset characteristics identified in Section~\ref{sec:ex2}.
+Fine-tuning involved several choices driven by the dataset properties from Section~\ref{sec:ex2}.
 
-\paragraph{Class-weighted cross-entropy loss.} The 9.5:1 negative-to-positive imbalance means a trivial classifier would achieve 90.5\% accuracy. We assign balanced class weights $w_c = N_{\text{total}} / (2 N_c)$ to the cross-entropy loss, increasing the gradient contribution of each positive example in proportion to its under-representation.
+\paragraph{Class-weighted cross-entropy loss.} The 9.5:1 negative-to-positive imbalance means a trivial classifier achieves 90.5\% accuracy by predicting everything negative. We use balanced class weights ($w_c = N_{\text{total}} / (2 N_c)$) so that missing a positive example is penalised more than a false alarm.
 
-\paragraph{Differential learning rates.} The classifier head is updated at a higher rate ($1 \times 10^{-4}$) than the backbone ($2 \times 10^{-5}$). The backbone weights are already near-optimal from pre-training; large updates risk destroying the representations that give RoBERTa its advantage.
+\paragraph{Differential learning rates.} The classifier head uses a higher learning rate ($1 \times 10^{-4}$) than the backbone ($2 \times 10^{-5}$). Large updates to the backbone tend to overwrite the pre-trained representations, which noticeably hurt performance in early experiments.
 
 \paragraph{Threshold tuning.}
 Rather than classifying at the default threshold of 0.5, we sweep thresholds over $[0.30, 0.60]$ on the development set and select the value maximising F1 for the positive class. Given the severe class imbalance, the optimal threshold is typically below 0.5.
@@ -196,12 +196,11 @@ We apply weight decay of 0.05, classifier dropout of 0.15, and gradient clipping
 
 \subsection*{Rationale and Expected Outcome}
 
-Two findings from the EDA directly motivate this approach. First, the boundary between PCL and neutral language is highly contextual (Section~\ref{sec:ex2}): words such as \textit{``need''}, \textit{``hope''}, and \textit{``poor''} appear in both classes, and it is the surrounding vocabulary that signals condescension. This rules out bag-of-words or
-averaged-embedding methods and confirms the need for a contextualised transformer. Second, positive examples tend to be longer than negative ones, motivating \texttt{max\_length\,=\,256} to avoid truncating discriminative content.
+Two observations from the EDA shaped this setup. First, words like \textit{``need''}, \textit{``hope''}, and \textit{``poor''} appear in both PCL and non-PCL examples, so the distinction is carried by context rather than vocabulary (Section~\ref{sec:ex2}); a bag-of-words model would be unable to capture this. Second, positive examples tend to be longer, so we set \texttt{max\_length\,=\,256} to avoid truncating content that may be discriminative.
 
-RoBERTa's contextualised representations are well-suited to capturing the patterns identified in the bigram analysis (Figure~\ref{fig:eda2}). For example, saviour framing (\textit{``feed hungry''}, \textit{``restore hope''}) and pity language (\textit{``feel sorry''}) depend not only on the words themselves but on the surrounding structure. The paper's own error analysis (Section~\ref{sec:ex1}) showed that its BERT-based models struggled with cases requiring world knowledge and contextual framing; RoBERTa's richer pre-training, which conditions every token on its full context over a much larger corpus than the original BERT, provides stronger representations for exactly this type of inference.
+The bigram analysis (Figure~\ref{fig:eda2}) illustrates why context matters: phrases like \textit{``feed hungry''} or \textit{``feel sorry''} are only patronising given the right surrounding structure. The original paper's own error analysis (Section~\ref{sec:ex1}) found that BERT-based models struggled in exactly these cases, and RoBERTa's larger pre-training corpus should give it somewhat better coverage of the relevant pragmatic patterns.
 
-Combined with class-weighted loss and threshold tuning, we expect \texttt{roberta-base} to comfortably exceed the untuned RoBERTa-base baseline (F1\,=\,0.48 dev) while remaining efficient to fine-tune on a single GPU.
+We expected this combination to clearly exceed the untuned RoBERTa-base baseline (F1\,=\,0.48 on dev).
 
 % ==============================================================
 \section{Implementation and Global Evaluation}
@@ -227,29 +226,19 @@ repository:
 
 \subsection{Error Analysis}
 
-Manual inspection of the 180 misclassified dev examples (92 false negatives, 88 false positives) reveals a few common failure patterns, illustrated in Table~\ref{tab:errors}.
+Looking at the 160 misclassified dev examples (68 FNs, 92 FPs) reveals two clear patterns, illustrated in Table~\ref{tab:errors}.
 
-\paragraph{False negatives: PCL expressed through framing.} The model consistently fails to detect PCL when the patronising tone is caused by the narrative rather than explicit word choice.
+\paragraph{False negatives: PCL expressed through framing.} Most false negatives involve PCL that is implicit; the condescension comes from what the text assumes or frames rather than from any obviously emotive words.
 
-The first FN example in Table~\ref{tab:errors} exhibits classic \textit{saviour framing}. The writer positions volunteers as rescuers ``offering a new lease on life'' to passive, helpless recipients, yet the surface language is journalistic, containing none of the overtly emotive language the model has learnt to associate with PCL.
+The immigrant sheepherding example (\#1) defines immigrants purely by their lack of alternatives, but none of the individual words are emotive or condescending. The disabled artists example (\#2) positions them as needing to prove they can be talented, which annotators read as patronising; the model apparently does not, since the surface tone is enthusiastic and positive. The charity example (\#3) casts homeless people as passive recipients of someone else's ``altruistic act'', but the journalistic tone, citing a precise figure of 204,000 days of accommodation, contains nothing the model flags.
 
-Similarly, the second FN example dehumanises homeless people through the phrase ``placing them where they belong'', but this is embedded in a rhetorical question that reads as policy commentary, a register the model does not flag.
+This fits the bigram EDA finding (Section~\ref{sec:ex2}) that shared vocabulary like \textit{``need''} and \textit{``hope''} appears in both classes: the model has picked up on word-level co-occurrences without learning the framing that makes them patronising.
 
-The third FN uses an emotive metaphor (``been to hell and back'') to frame a homeless person's life as a spectacle of suffering, which annotators agreed was patronising but which the model likely reads as a sympathetic human-interest story.
+\paragraph{False positives: keyword presence without patronising intent.} The FP pattern is more straightforward: the model seems to treat the presence of a retrieval keyword as near-sufficient evidence of PCL, regardless of context.
 
-This pattern aligns with the finding from the bigram EDA (Section~\ref{sec:ex2}) that words like \textit{``need''} and \textit{``hope''} appear in both classes: the model has learnt surface co-occurrences but not the framing that make them patronising.
+Example \#4 uses \textit{poor families} in a policy appeal; \#5 is arguably anti-PCL, with the writer insisting a homeless person ``was not just a faceless homeless person''; \#6 places \textit{refugees} in a statement condemning smugglers for violating human dignity. None of these are remotely patronising, but all triggered a positive prediction.
 
-\paragraph{False positives: keyword presence without patronising intent.} The FP errors follow an equally consistent pattern: the model appears to treat certain keywords as near-sufficient evidence of PCL, even when the surrounding context is neutral, humanising, or metaphorical.
-
-In the fourth example in Table~\ref{tab:errors}, the word \textit{hopelessness} appears in a direct quotation with no patronising framing whatsoever.
-
-The fifth example is arguably the opposite of PCL, as the writer explicitly resists reducing a homeless individual to a stereotype.
-
-The sixth example uses \textit{refugees} metaphorically to describe political party workers, with no reference to a vulnerable community at all.
-
-Taken together, the FP errors suggest the model has learnt a shallow association between the retrieval keywords and the positive class, without properly understanding the broader context in many cases.
-
-\begin{table}[H]
+\begin{table}
     \centering
     \caption{Representative misclassified examples from the dev set.}
     \label{tab:errors}
@@ -257,22 +246,22 @@ Taken together, the FP errors suggest the model has learnt a shallow association
         \toprule
         \textbf{Text (truncated)} & \textbf{True} & \textbf{Pred} & \textbf{Type} \\
         \midrule
-        \textit{``Instead of restaurants and malls, they go into the nooks and crannies of the capital, approaching every homeless person they meet to offer them a new lease on life.''} & 1 & 0 & FN \\[4pt]
-        \textit{``Are there systems for actually going out, picking up the homeless, and placing them where they belong?''} & 1 & 0 & FN \\[4pt]
-        \textit{``Bombarded by schizophrenia, addiction and homelessness, you might say that Eoghan O'Driscoll has been to hell and back. But he is finding a new balance through painting.''} & 1 & 0 & FN \\[4pt]
+        \textit{``Sheepherding in America has always been an immigrant's job, too dirty, too cold and too lonely for anyone with options.''} & 1 & 0 & FN \\[4pt]
+        \textit{``She hopes the book , which contains some of her own work as well , will show how talented disabled people can be .''} & 1 & 0 & FN \\[4pt]
+        \textit{``over 204,000 days of purpose-built residential accommodation \ldots\ have been delivered by this personally driven altruistic act alone.''} & 1 & 0 & FN \\[4pt]
         \midrule
-        \textit{``He stated he had no wishes to be dead, no feelings of hopelessness.''} & 0 & 1 & FP \\[4pt]
-        \textit{``His friends at the Chevron want people to know he wasn't just a faceless homeless person. He was their friend and their family.''} & 0 & 1 & FP \\[4pt]
-        \textit{``Workers of the party crying out that they have been living like refugees since the party lost the 2015 general election.''} & 0 & 1 & FP \\
+        \textit{``Marcos said the government should help poor families that try every possible means to survive.''} & 0 & 1 & FP \\[4pt]
+        \textit{``His friends at the Chevron want people to know he was n't just a faceless homeless person. He was their friend and their family.''} & 0 & 1 & FP \\[4pt]
+        \textit{``ruthless smugglers are preying on desperate migrants and refugees with no regard at all for human dignity.''} & 0 & 1 & FP \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
 \subsection{Layer Ablation Study}
 
-To understand how much of the model's depth is necessary for PCL detection, we conduct an ablation study in which transformer layers are progressively removed from the trained model. Starting from the full 12-layer DeBERTa-V3-base checkpoint, we truncate the encoder to its first $N$ layers and evaluate directly on the dev set (without retraining), with threshold tuning applied at each configuration. Results are shown in Table~\ref{tab:ablation}.
+To test how much of RoBERTa's depth is actually needed, we progressively removed layers from the trained model. For each configuration we truncated the encoder to its first $N$ layers, re-tuned the decision threshold on the dev set, and evaluated without retraining. Results are in Table~\ref{tab:ablation}.
 
-\begin{table}[H]
+\begin{table}
     \centering
     \caption{Layer ablation results on the dev set. Each row uses only the first $N$ of 12 transformer layers from the trained checkpoint, evaluated with threshold tuning. $\Delta$\,F1 is relative to the full model.}
     \label{tab:ablation}
@@ -280,19 +269,21 @@ To understand how much of the model's depth is necessary for PCL detection, we c
         \toprule
         \textbf{Layers} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{$\Delta$\,F1} \\
         \midrule
-        12 (full) & 0.5431 & 0.5487 & 0.5377 & --- \\
-        10        & 0.2890 & 0.3312 & 0.2563 & $-$0.2542 \\
-        8         & 0.1736 & 0.0951 & 1.0000 & $-$0.3695 \\
-        6         & 0.2485 & 0.1779 & 0.4121 & $-$0.2947 \\
-        4         & 0.1924 & 0.1270 & 0.3970 & $-$0.3507 \\
-        2         & 0.1740 & 0.0953 & 1.0000 & $-$0.3692 \\
+        12 (full) & 0.6209 & 0.5874 & 0.6583 & --- \\
+        10        & 0.6150 & 0.6852 & 0.5578 & $-$0.0059 \\
+        8         & 0.4030 & 0.7826 & 0.2714 & $-$0.2179 \\
+        6         & 0.2891 & 0.2055 & 0.4874 & $-$0.3317 \\
+        4         & 0.1919 & 0.1065 & 0.9698 & $-$0.4289 \\
+        2         & 0.2677 & 0.1625 & 0.7588 & $-$0.3531 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\paragraph{Analysis.} The full 12-layer model is essential for meaningful performance. Removing just two layers (12$\to$10) nearly halves F1 from 0.54 to 0.29, and all configurations below 10 layers collapse to near the na\"ive ``predict all positive'' baseline (F1\,$\approx$\,0.17, corresponding to the 9.5\% positive class rate). The 8-layer and 2-layer configurations exhibit this degenerate behaviour explicitly: recall reaches 1.0 while precision drops to the class prior, meaning the truncated model has lost the ability to discriminate between classes entirely.
+\paragraph{Analysis.} The most interesting result is how little removing the top two layers matters: F1 drops by only 0.0059 (0.6209$\to$0.6150), and precision actually goes up from 0.5874 to 0.6852. Layers 11--12 are doing very little on this task.
 
-This result is consistent with the error analysis in the previous section. PCL detection depends on recognising subtle cues: tone, framing, and implied attitudes, rather than surface lexical patterns. These higher-order features are built up incrementally through the transformer stack, with the upper layers (11--12) contributing disproportionately. The lower layers alone capture syntax and word-level semantics, but not the contextual framing that distinguishes patronising language from neutral reporting about vulnerable communities.
+Below 10 layers things deteriorate quickly. At 8 layers F1 drops to 0.4030, with recall falling to 0 2714---the model becomes overly cautious and misses most positives. At 4 layers it goes the other way, essentially predicting everything as positive (recall\,=\,0.97, precision\,=\,0.11), and the 6- and 2-layer results are similarly poor.
+
+This matches the picture from the error analysis: without enough depth the model cannot represent the contextual framing that distinguishes PCL from neutral text, and falls back on shallow keyword associations that cause either over- or under-prediction depending on the threshold.
 
 % ==============================================================
 % References
