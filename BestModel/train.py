@@ -1,6 +1,6 @@
 """
 PCL Binary Classification — Training Script
-Fine-tunes DeBERTa-v3-base with weighted cross-entropy loss.
+Fine-tunes RoBERTa-base with weighted cross-entropy loss.
 """
 
 import sys
